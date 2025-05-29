@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeadDrop Exchange - Secure Anonymous Trading</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid #00ff00;
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            text-align: center;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px #00ff00;
+            animation: flicker 3s infinite;
+        }
+
+        .header .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        @keyframes flicker {
+            0%, 100% { text-shadow: 0 0 20px #00ff00; }
+            50% { text-shadow: 0 0 30px #00ff00, 0 0 40px #00ff00; }
+        }
+
+        .nav {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            backdrop-filter: blur(5px);
+        }
+
+        .nav ul {
+            display: flex;
+            list-style: none;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .nav a {
+            color: #00ff00;
+            text-decoration: none;
+            padding: 8px 15px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .nav a:hover, .nav a.active {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .sidebar {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid #333;
+            padding: 20px;
+            width: 250px;
+            height: fit-content;
+            backdrop-filter: blur(5px);
+        }
+
+        .sidebar h3 {
+            color: #ff6600;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sidebar li:hover {
+            color: #ff6600;
+            padding-left: 10px;
+        }
+
+        .sidebar li:before {
+            content: ">> ";
+            color: #666;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .login-section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #ff0000;
+            padding: 30px;
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+            animation: login-flicker 2s infinite;
+        }
+
+        @keyframes login-flicker {
+            0%, 100% { 
+                border-color: #ff0000;
+                box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            }
+            50% { 
+                border-color: #ff6600;
+                box-shadow: 0 0 30px rgba(255, 102, 0, 0.5);
+            }
+        }
+
+        .login-section h2 {
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #333;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: #333;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .btn.danger {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        .btn.danger:hover {
+            background: #ff0000;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .btn.warning {
+            border-color: #ff6600;
+            color: #ff6600;
+        }
+
+        .btn.warning:hover {
+            background: #ff6600;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #333;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            background: #222;
+            border: 1px solid #333;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .tab.active {
+            background: #333;
+            color: #00ff00;
+            border-bottom-color: #00ff00;
+        }
+
+        .tab:hover {
+            color: #00ff00;
+            background: #2a2a2a;
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid #333;
+            padding: 25px;
+            min-height: 400px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .pgp-message {
+            background: #111;
+            border: 1px solid #444;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: monospace;
+            color: #ccc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pgp-header {
+            color: #ff6600;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .encrypted-text {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.2;
+            word-break: break-all;
+        }
+
+        .message-board {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+
+        .message-board::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .message-board::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .message-board::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        .message-item {
+            padding: 15px;
+            border-bottom: 1px solid #222;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .message-item:hover {
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-online { background: #00ff00; }
+        .status-away { background: #ff6600; }
+        .status-offline { background: #666; }
+
+        .collapsible {
+            cursor: pointer;
+            padding: 15px;
+            background: #222;
+            border: 1px solid #333;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+
+        .collapsible:hover {
+            background: #2a2a2a;
+        }
+
+        .collapsible.active {
+            background: #333;
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-top: none;
+        }
+
+        .collapsible-content.show {
+            display: block;
+        }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .gallery-item {
+            background: #222;
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            border-color: #00ff00;
+            transform: scale(1.05);
+        }
+
+        .gallery-placeholder {
+            width: 100%;
+            height: 100px;
+            background: #111;
+            border: 1px dashed #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            background: rgba(20, 20, 20, 0.9);
+            border-top: 2px solid #333;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            backdrop-filter: blur(5px);
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        .footer .links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer .links a {
+            color: #666;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer .links a:hover {
+            color: #00ff00;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup.show {
+            display: flex;
+        }
+
+        .popup-content {
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #ff0000;
+        }
+
+        .scrolling-text {
+            background: #000;
+            color: #ff6600;
+            padding: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .scrolling-text span {
+            display: inline-block;
+            animation: scroll-left 15s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+            
+            .content-area {
+                order: 1;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                flex: none;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .main-content {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .login-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="container">
+        <header class="header">
+            <h1>DeadDrop Exchange</h1>
+            <div class="subtitle">Secure Anonymous Trading Platform - PGP Encrypted Communications</div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#" class="nav-link active" data-tab="login">Access Terminal</a></li>
+                <li><a href="#" class="nav-link" data-tab="messages">Message Board</a></li>
+                <li><a href="#" class="nav-link" data-tab="exchange">Exchange</a></li>
+                <li><a href="#" class="nav-link" data-tab="vault">Vault</a></li>
+                <li><a href="#" class="nav-link" data-tab="tools">Tools</a></li>
+            </ul>
+        </nav>
+
+        <div class="scrolling-text">
+            <span>*** WARNING: ENCRYPTED CHANNEL - UNAUTHORIZED ACCESS PROHIBITED *** SYSTEM MONITORING ACTIVE *** USE AT YOUR OWN RISK ***</span>
+        </div>
+
+        <main class="main-content">
+            <aside class="sidebar">
+                <h3>System Status</h3>
+                <ul>
+                    <li><span class="status-indicator status-online"></span>Tor Network: Active</li>
+                    <li><span class="status-indicator status-online"></span>PGP Keys: Valid</li>
+                    <li><span class="status-indicator status-away"></span>I2P Tunnel: Connecting</li>
+                    <li><span class="status-indicator status-offline"></span>Mixnet: Offline</li>
+                </ul>
+                
+                <h3>Active Drops</h3>
+                <ul>
+                    <li>Package #A7F3: Pending</li>
+                    <li>Package #B2E9: Delivered</li>
+                    <li>Package #C5K1: Encrypted</li>
+                    <li>Package #D8M4: Awaiting Key</li>
+                </ul>
+                
+                <h3>Quick Links</h3>
+                <ul>
+                    <li>Generate New Keys</li>
+                    <li>Verify Signatures</li>
+                    <li>Clean Metadata</li>
+                    <li>Burn Session</li>
+                    <li>Emergency Wipe</li>
+                </ul>
+            </aside>
+
+            <div class="content-area">
+                <!-- Login Tab -->
+                <div id="login-tab" class="tab-content active">
+                    <div class="login-section">
+                        <h2>Secure Access Terminal</h2>
+                        <div class="form-group">
+                            <label>Username:</label>
+                            <input type="text" placeholder="Enter alias..." id="username">
+                        </div>
+                        <div class="form-group">
+                            <label>Passphrase:</label>
+                            <input type="password" placeholder="Enter passphrase..." id="password">
+                        </div>
+                        <div class="form-group">
+                            <label>PGP Key ID:</label>
+                            <input type="text" placeholder="0x..." id="pgp-key">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn" onclick="authenticate()">Authenticate</button>
+                            <button class="btn warning" onclick="generateKeys()">Generate Keys</button>
+                            <button class="btn danger" onclick="emergencyWipe()">Emergency Wipe</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Tab -->
+                <div id="messages-tab" class="tab-content">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchSubTab(this, 'board')">Message Board</div>
+                        <div class="tab" onclick="switchSubTab(this, 'compose')">Compose</div>
+                        <div class="tab" onclick="switchSubTab(this, 'drafts')">Drafts</div>
+                    </div>
+
+                    <div id="board-content" class="sub-tab-content">
+                        <div class="message-board">
+                            <div class="message-item">
+                                <div class="message-meta">
+                                    <span>Anonymous_7x4F</span>
+                                    <span>2h ago</span>
+                                </div>
+                                <div class="pgp-message">
+                                    <div class="pgp-header">-----BEGIN PGP MESSAGE-----</div>
+                                    <div class="encrypted-text">
+                                        Version: GnuPG v2.0.22<br>
+                                        hQEMAw7wR7wJc2+bAQf/XvK8+nZ7Yp2mE3F9qR5tA8bC6dD4eE2fF7gG1hH3iI9jJ0k<br>
+                                        L1mM2nN3oO4pP5qQ6rR7sS8tT9uU0vV1wW2xX3yY4zZ5aA6bB7cC8dD9eE0fF1gG2h<br>
+                                        H3iI4jJ5kK6lL7mM8nN9oO0pP1qQ2rR3sS4tT5uU6vV7wW8xX9yY0zZ1aA2bB3cC4d
+                                    </div>
+                                    <div class="pgp-header">-----END PGP MESSAGE-----</div>
+                                </div>
+                            </div>
+                            
+                            <div class="message-item">
+                                <div class="message-meta">
+                                    <span>Ghost_Protocol</span>
+                                    <span>5h ago</span>
+                                </div>
+                                <div class="pgp-message">
+                                    <div class="pgp-header">-----BEGIN PGP MESSAGE-----</div>
+                                    <div class="encrypted-text">
+                                        Version: GnuPG v2.0.22<br>
+                                        hQIMAw7wR7wJc2+bAQgAzRv4K8+mX6Vp1kE2D8pC5qB3nA7bB6cC5dD4eE3fF2gG1h<br>
+                                        H2iI8jJ4kK5lL6mM7nN8oO9pP0qQ1rR2sS3tT4uU5vV6wW7xX8yY9zZ0aA1bB2cC3d<br>
+                                        D4eE5fF6gG7hH8iI9jJ0kK1lL2mM3nN4oO5pP6qQ7rR8sS9tT0uU1vV2wW3xX4yY5z
+                                    </div>
+                                    <div class="pgp-header">-----END PGP MESSAGE-----</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="compose-content" class="sub-tab-content" style="display: none;">
+                        <div class="form-group">
+                            <label>Recipient PGP Key:</label>
+                            <input type="text" placeholder="Enter recipient's public key ID...">
+                        </div>
+                        <div class="form-group">
+                            <label>Message:</label>
+                            <textarea style="width: 100%; height: 200px; background: #111; border: 1px solid #333; color: #00ff00; font-family: 'Courier New', monospace; padding: 10px;" placeholder="Enter your message here..."></textarea>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn">Encrypt & Send</button>
+                            <button class="btn warning">Save Draft</button>
+                            <button class="btn danger">Burn Message</button>
+                        </div>
+                    </div>
+
+                    <div id="drafts-content" class="sub-tab-content" style="display: none;">
+                        <p>No drafts found.</p>
+                    </div>
+                </div>
+
+                <!-- Exchange Tab -->
+                <div id="exchange-tab" class="tab-content">
+                    <div class="action-buttons" style="margin-bottom: 20px;">
+                        <button class="btn" onclick="showPopup('deliver-popup')">Deliver</button>
+                        <button class="btn warning" onclick="showPopup('retrieve-popup')">Retrieve</button>
+                        <button class="btn danger" onclick="scrambleExchange()">Scramble</button>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>Active Exchanges (3)</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="pgp-message">
+                            <div class="message-meta">
+                                <span>Exchange ID: #XCH-7F4A</span>
+                                <span>Status: Pending Delivery</span>
+                            </div>
+                            <p>Package Type: [ENCRYPTED]</p>
+                            <p>Drop Location: [COORDINATES OBFUSCATED]</p>
+                            <p>Expiration: 72 hours</p>
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>Completed Exchanges (12)</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <p>Historical exchange data encrypted and archived.</p>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>Failed Exchanges (2)</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <p>Failed exchange logs purged for security.</p>
+                    </div>
+                </div>
+
+                <!-- Vault Tab -->
+                <div id="vault-tab" class="tab-content">
+                    <h3>Secure Vault</h3>
+                    <div class="image-gallery">
+                        <div class="gallery-item">
+                            <div class="gallery-placeholder">[IMG_001.enc]</div>
+                            <p>Encrypted File</p>
+                        </div>
+                        <div class="gallery-item">
+                            <div class="gallery-placeholder">[DOC_047.pgp]</div>
+                            <p>PGP Document</p>
+                        </div>
+                        <div class="gallery-item">
+                            <div class="gallery-placeholder">[KEY_BACKUP.asc]</div>
+                            <p>Key Backup</p>
+                        </div>
+                        <div class="gallery-item">
+                            <div class="gallery-placeholder">[MANIFEST.sig]</div>
+                            <p>Signed Manifest</p>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn">Upload Encrypted</button>
+                        <button class="btn warning">Download Selected</button>
+                        <button class="btn danger">Secure Delete</button>
+                    </div>
+                </div>
+
+                <!-- Tools Tab -->
+                <div id="tools-tab" class="tab-content">
+                    <h3>Cryptographic Tools</h3>
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>PGP Key Generator</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="form-group">
+                            <label>Key Size:</label>
+                            <select style="width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #00ff00;">
+                                <option>2048 bit</option>
+                                <option>4096 bit</option>
+                                <option>8192 bit</option>
+                            </select>
+                        </div>
+                        <button class="btn">Generate Key Pair</button>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>Message Encryptor</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <textarea style="width: 100%; height: 100px; background: #111; border: 1px solid #333; color: #00ff00; font-family: 'Courier New', monospace; padding: 10px;" placeholder="Enter plaintext..."></textarea>
+                        <div class="action-buttons">
+                            <button class="btn">Encrypt</button>
+                            <button class="btn warning">Decrypt</button>
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <strong>File Shredder</strong>
+                    </div>
+                    <div class="collapsible-content">
+                        <p>Secure file deletion with multiple overwrite passes.</p>
+                        <div class="action-buttons">
+                            <button class="btn danger">Shred Files</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <h3>Security Alerts</h3>
+                <ul>
+                    <li>2 failed login attempts</li>
+                    <li>Key expiring in 30 days</li>
+                    <li>Network latency: 247ms</li>
+                    <li>Session expires: 45 min</li>
+                </ul>
+                
+                <h3>Recent Activity</h3>
+                <ul>
+                    <li>Message encrypted [14:32]</li>
+                    <li>Key verified [14:28]</li>
+                    <li>Drop completed [14:15]</li>
+                    <li>Package retrieved [13:47]</li>
+                    <li>Session started [13:22]</li>
+                </ul>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn danger" style="width: 100%;" onclick="emergencyBurn()">Emergency Burn</button>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <p>DeadDrop Exchange v2.1.7 - Secure Anonymous Trading Platform</p>
+            <p>*** FOR AUTHORIZED PERSONNEL ONLY ***</p>
+            <div class="links">
+                <a href="#">Security Policy</a>
+                <a href="#">PGP Keys</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Emergency Contacts</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Popups -->
+    <div id="deliver-popup" class="popup">
+        <div class="popup-content">
+            <span class="popup-close" onclick="hidePopup('deliver-popup')">&times;</span>
+            <h3>Deliver Package</h3>
+            <div class="form-group">
+                <label>Drop Location Code:</label>
+                <input type="text" placeholder="Enter 16-digit code...">
+            </div>
+            <div class="form-group">
+                <label>Package Hash:</label>
+                <input type="text" placeholder="SHA-256 hash...">
+            </div>
+            <div class="action-buttons">
+                <button class="btn">Confirm Delivery</button>
+                <button class="btn danger" onclick="hidePopup('deliver-popup')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="retrieve-popup" class="popup">
+        <div class="popup-content">
+            <span class="popup-close" onclick="hidePopup('retrieve-popup')">&times;</span>
+            <h3>Retrieve Package</h3>
+            <div class="form-group">
+                <label>Retrieval Code:</label>
+                <input type="text" placeholder="Enter retrieval code...">
+            </div>
+            <div class="form-group">
+                <label>Private Key:</label>
+                <input type="password" placeholder="Enter private key...">
+            </div>
+            <div class="action-buttons">
+                <button class="btn">Retrieve Package</button>
+                <button class="btn danger" onclick="hidePopup('retrieve-popup')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js animated background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Create matrix rain effect
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const colors = [];
+
+        for (let i = 0; i < 10000; i++) {
+            vertices.push(
+                Math.random() * 2000 - 1000,
+                Math.random() * 2000 - 1000,
+                Math.random() * 2000 - 1000
+            );
+            
+            colors.push(0, Math.random() * 0.5 + 0.5, 0);
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 2,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        camera.position.z = 500;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            points.rotation.x += 0.001;
+            points.rotation.y += 0.002;
+            
+            // Update particle positions for rain effect
+            const positions = points.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 2;
+                if (positions[i] < -1000) {
+                    positions[i] = 1000;
+                }
+            }
+            points.geometry.attributes.position.needsUpdate = true;
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Navigation functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Update nav links
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        }
+
+        // Event listeners for navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabName = e.target.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
+        // Sub-tab functionality
+        function switchSubTab(tabElement, contentId) {
+            // Remove active class from all sub-tabs
+            const subTabs = tabElement.parentElement.querySelectorAll('.tab');
+            subTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            tabElement.classList.add('active');
+            
+            // Hide all sub-tab contents
+            const subTabContents = document.querySelectorAll('.sub-tab-content');
+            subTabContents.forEach(content => content.style.display = 'none');
+            
+            // Show selected content
+            document.getElementById(contentId + '-content').style.display = 'block';
+        }
+
+        // Collapsible functionality
+        function toggleCollapsible(element) {
+            element.classList.toggle('active');
+            const content = element.nextElementSibling;
+            content.classList.toggle('show');
+        }
+
+        // Popup functionality
+        function showPopup(popupId) {
+            document.getElementById(popupId).classList.add('show');
+        }
+
+        function hidePopup(popupId) {
+            document.getElementById(popupId).classList.remove('show');
+        }
+
+        // Action button functions
+        function authenticate() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const pgpKey = document.getElementById('pgp-key').value;
+            
+            if (username && password && pgpKey) {
+                alert('Authentication initiated... Please wait for verification.');
+                // Simulate login process
+                setTimeout(() => {
+                    alert('Access granted. Welcome to DeadDrop Exchange.');
+                }, 2000);
+            } else {
+                alert('Error: All fields required for authentication.');
+            }
+        }
+
+        function generateKeys() {
+            alert('Generating new PGP key pair... This may take several minutes.');
+            setTimeout(() => {
+                alert('Key pair generated successfully. Public key ID: 0x7F4A92B3C5D6E8F1');
+            }, 3000);
+        }
+
+        function emergencyWipe() {
+            if (confirm('WARNING: This will permanently delete all data. Continue?')) {
+                alert('Emergency wipe initiated... All data will be securely deleted.');
+            }
+        }
+
+        function scrambleExchange() {
+            alert('Scrambling exchange data... All traces will be obfuscated.');
+        }
+
+        function emergencyBurn() {
+            if (confirm('EMERGENCY BURN: This will destroy current session and all temporary data. Continue?')) {
+                alert('Emergency burn sequence activated. Session will terminate in 10 seconds.');
+            }
+        }
+
+        // Add some random flicker effects to certain elements
+        setInterval(() => {
+            const elements = document.querySelectorAll('.status-indicator.status-online');
+            elements.forEach(el => {
+                el.style.opacity = Math.random() > 0.1 ? '1' : '0.3';
+            });
+        }, 500);
+
+        // Simulate network activity
+        setInterval(() => {
+            const activities = [
+                'Packet received',
+                'Key exchange',
+                'Encryption complete',
+                'Message queued',
+                'Drop verified',
+                'Session ping'
+            ];
+            
+            // Randomly update activity log
+            if (Math.random() > 0.7) {
+                console.log(`[${new Date().toLocaleTimeString()}] ${activities[Math.floor(Math.random() * activities.length)]}`);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
